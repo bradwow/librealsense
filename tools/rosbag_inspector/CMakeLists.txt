@@ -1,18 +1,9 @@
-# ubuntu 12.04 LTS cmake version 2.8.7
-# ubuntu 14.04 LTS cmake version 2.8.12.2
-# ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 
-project(RealsenseTools)
+project(RealsenseToolsRosbagInspector)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-# View the makefile commands during build
-#set(CMAKE_VERBOSE_MAKEFILE on)
-
-# This parameter is meant for disabling graphical examples when building for
-# save-to-disk targets.
-option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples." ON)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -23,7 +14,6 @@ if(COMPILER_SUPPORTS_CXX11)
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
-
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     find_package(OpenGL REQUIRED)
@@ -62,10 +52,28 @@ else()
     endif()
 endif()
 
-add_subdirectory(terminal)
-add_subdirectory(fw-logger)
-add_subdirectory(enumerate-devices)
-add_subdirectory(realsense-viewer)
-add_subdirectory(data-collect)
-#add_subdirectory(depth-quality)
-add_subdirectory(rosbag_inspector)
+# terminal
+add_executable(rs-rosbag-inspector rs-rosbag-inspector.cpp)
+if(WIN32)
+    target_link_libraries(rs-rosbag-inspector ${DEPENDENCIES})
+else()
+    target_link_libraries(rs-rosbag-inspector -lpthread ${DEPENDENCIES})
+endif()
+
+include_directories(rs-rosbag-inspector 
+				    ../../common 
+					../../third-party)
+
+set_target_properties (
+	rs-rosbag-inspector 
+	PROPERTIES
+    FOLDER Tools
+)
+
+install(
+    TARGETS
+    rs-rosbag-inspector
+    RUNTIME DESTINATION
+    ${CMAKE_INSTALL_PREFIX}/bin
+)
+
