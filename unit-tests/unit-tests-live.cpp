@@ -2323,7 +2323,7 @@ TEST_CASE("Sync sanity", "[live]") {
 
         disable_sensitive_options_for(dev);
 
-        pipeline pipe;
+        pipeline pipe(ctx);
         auto profiles = configure_all_supported_streams(dev, pipe);
 
 
