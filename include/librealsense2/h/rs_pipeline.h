@@ -130,6 +130,31 @@ void rs2_pipeline_delete_selection(rs2_stream_profile_list* list);
 */
 void rs2_delete_pipeline(rs2_pipeline* block);
 
+/**
+* Configures the pipeline to use the given playback file as the device
+* The pipeline will try to create a device from the given file and match other configurations to it
+* NOTE: Enabling device from file cannot be used when enabling recording, and vice versa
+* \param[in] pipe    A pointer to an instance of the pipeline
+* \param[in] file    Path to a recorded RealSense SDK file
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_pipeline_enable_device_from_file(rs2_pipeline* pipe, const char* file, rs2_error ** error);
+
+
+/**
+* Adds a request for the pipeline to record the device to file.
+* This function should be called before starting the pipeline.
+* After selecting the device that matches all other configuration, the pipeline will "wrap" the device
+* with a recorder and use it as the device.
+* Recording will begin once pipeline::Start() is called, and recording will end once pipeline::Stop() is called
+* To record another session, reconfigure the pipeline.
+* NOTE: Enabling device recording cannot be used when enabling device from file, and vice versa
+* \param[in] pipe    A pointer to an instance of the pipeline
+* \param[in] file    Path to the file to which record should be saved
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_pipeline_enable_device_from_file(rs2_pipeline* pipe, const char* file, rs2_error ** error);
+
 #ifdef __cplusplus
 }
 #endif

@@ -29,7 +29,8 @@ namespace librealsense
         std::shared_ptr<configuration> resolve(unsigned int timeout_ms = std::numeric_limits<uint64_t>::max());
         void enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
         void enable(std::string device_serial);
-
+        void enable_record(const std::string& file);
+        void enable_playback(const std::string& file);
     private:
 
         void set_default_configuration(device_interface* dev);
@@ -51,6 +52,8 @@ namespace librealsense
 
         void enable(std::string device_serial);
         void enable(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t framerate);
+        void enable_record(const std::string& file);
+        void enable_playback(const std::string& file);
 
         void commit_config();
         void reset_config();

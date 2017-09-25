@@ -1462,6 +1462,23 @@ void rs2_delete_pipeline(rs2_pipeline* pipe) try
 }
 NOEXCEPT_RETURN(, pipe)
 
+void rs2_pipeline_enable_device_from_file(rs2_pipeline* pipe, const char* file, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(file);
+
+    pipe->pipe->enable_playback(file);
+}
+NOEXCEPT_RETURN(, pipe, file)
+
+void rs2_pipeline_enable_device_recording(rs2_pipeline* pipe, const char* file, rs2_error ** error) try
+{
+    VALIDATE_NOT_NULL(pipe);
+    VALIDATE_NOT_NULL(file);
+
+    pipe->pipe->enable_record(file);
+}
+NOEXCEPT_RETURN(, pipe, file)
 
 rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* proc, rs2_error** error) try
 {

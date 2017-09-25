@@ -108,6 +108,26 @@ namespace librealsense
         _resolver->enable(stream, index, width, height, format, framerate);
     }
 
+    void pipeline::enable_record(const std::string& file)
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+        if (_configuration)
+        {
+            throw std::runtime_error(to_string() << __FUNCTION__ << " failed. pipeline already configured");
+        }
+        _resolver->enable_record(file);
+    }
+
+    void pipeline::enable_playback(const std::string& file)
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+        if (_configuration)
+        {
+            throw std::runtime_error(to_string() << __FUNCTION__ << " failed. pipeline already configured");
+        }
+        _resolver->enable_playback(file);
+    }
+
     void pipeline::reset_config()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
@@ -287,6 +307,15 @@ namespace librealsense
     void resolver::enable(std::string device_serial)
     {
         _device_serial = device_serial;
+    }
+
+    void resolver::enable_record(const std::string& file)
+    {
+        //TODO: Implement
+    }
+    void resolver::enable_playback(const std::string& file)
+    {
+        //TODO: Implement
     }
 
     void resolver::set_default_configuration(device_interface* dev)

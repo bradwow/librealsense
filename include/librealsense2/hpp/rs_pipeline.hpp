@@ -209,6 +209,35 @@ namespace rs2
             return profile;
         }
 
+        /**
+        * Configures the pipeline to use the given playback file as the device
+        * The pipeline will try to create a device from the given file and match other configurations to it
+        * NOTE: Enabling device from file cannot be used when enabling recording, and vice versa
+        * \param[in] file    Path to a recorded RealSense SDK file 
+        */
+        void enable_device_from_file(const std::string& file)
+        {
+            rs2_error* e = nullptr;
+            rs2_pipeline_enable_device_from_file(_pipeline.get(), file.c_str(), &e);
+            error::handle(e);
+        }
+        
+        /**
+        * Adds a request for the pipeline to record the device to file.
+        * This function should be called before starting the pipeline.
+        * After selecting the device that matches all other configuration, the pipeline will "wrap" the device
+        * with a recorder and use it as the device.
+        * Recording will begin once pipeline::Start() is called, and recording will end once pipeline::Stop() is called
+        * To record another session, reconfigure the pipeline.
+        * NOTE: Enabling device recording cannot be used when enabling device from file, and vice versa
+        * \param[in] file    Path to the file to which record should be saved
+        */
+        void enable_device_recording(const std::string& file)
+        {
+            rs2_error* e = nullptr;
+            rs2_pipeline_enable_device_recording(_pipeline.get(), file.c_str(), &e);
+            error::handle(e);
+        }
     private:
         context _ctx;
         device _dev;
