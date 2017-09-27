@@ -77,8 +77,8 @@ namespace rs2
         for (size_t i = 0; i < vec.size(); i++) pairs[i] = std::make_pair(vec[i], names[i]);
 
         std::sort(begin(pairs), end(pairs),
-        [](const std::pair<T, std::string>& lhs,
-           const std::pair<T, std::string>& rhs) {
+            [](const std::pair<T, std::string>& lhs,
+                const std::pair<T, std::string>& rhs) {
             return lhs.first < rhs.first;
         });
 
@@ -98,7 +98,7 @@ namespace rs2
 
     struct frame_metadata
     {
-        std::array<std::pair<bool,rs2_metadata_type>,RS2_FRAME_METADATA_COUNT> md_attributes{};
+        std::array<std::pair<bool, rs2_metadata_type>, RS2_FRAME_METADATA_COUNT> md_attributes{};
     };
 
     struct notification_model;
@@ -162,7 +162,7 @@ namespace rs2
     {
     public:
         subdevice_model(device& dev, sensor& s, std::string& error_message);
-        bool is_there_common_fps() ;
+        bool is_there_common_fps();
         bool draw_stream_selection();
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
@@ -170,10 +170,10 @@ namespace rs2
         void play(const std::vector<stream_profile>& profiles);
         void update(std::string& error_message, notifications_model& model);
         void draw_options(const std::vector<rs2_option>& drawing_order,
-                          bool update_read_only_options, std::string& error_message,
-                          notifications_model& model);
+            bool update_read_only_options, std::string& error_message,
+            notifications_model& model);
         bool draw_option(rs2_option opt, bool update_read_only_options,
-                         std::string& error_message, notifications_model& model);
+            std::string& error_message, notifications_model& model);
 
 
         bool is_paused() const;
@@ -232,7 +232,7 @@ namespace rs2
         bool streaming = false;
         bool rgb_rotation_btn = false;
 
-        rect normalized_zoom{0, 0, 1, 1};
+        rect normalized_zoom{ 0, 0, 1, 1 };
         rect roi_rect;
         bool auto_exposure_enabled = false;
         float depth_units = 1.f;
@@ -273,7 +273,7 @@ namespace rs2
         void show_metadata(const mouse_info& g);
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
 
-        void show_stream_footer(const rect& stream_rect,const mouse_info& mouse);
+        void show_stream_footer(const rect& stream_rect, const mouse_info& mouse);
         void show_stream_header(ImFont* font, rs2::rect stream_rect, viewer_model& viewer);
 
         rect layout;
@@ -289,15 +289,15 @@ namespace rs2
         fps_calc            fps;
         rect                roi_display_rect{};
         frame_metadata      frame_md;
-        bool                metadata_displayed  = false;
-        bool                capturing_roi       = false;    // active modification of roi
+        bool                metadata_displayed = false;
+        bool                capturing_roi = false;    // active modification of roi
         std::shared_ptr<subdevice_model> dev;
         float _frame_timeout = 700.0f;
         float _min_timeout = 167.0f;
 
         bool _mid_click = false;
-        float2 _middle_pos{0, 0};
-        rect _normalized_zoom{0, 0, 1, 1};
+        float2 _middle_pos{ 0, 0 };
+        rect _normalized_zoom{ 0, 0, 1, 1 };
         int color_map_idx = 1;
         bool show_stream_details = false;
 
@@ -318,16 +318,18 @@ namespace rs2
         void pause_record();
         void resume_record();
         int draw_playback_panel(ImFont* font, viewer_model& view);
-        void draw_advanced_mode_tab();
+        void draw_advanced_mode_tab(device_model*& restarted_device);
         void draw_controls(float panel_width, float panel_height,
             ImFont *font1, ImFont *font2,
             const mouse_info &mouse,
             std::string& error_message,
             device_model*& device_to_remove,
+            device_model*& restarted_device,
             viewer_model& viewer, float windows_width,
             bool update_read_only_options,
             std::map<subdevice_model*, float>& model_to_y,
-            std::map<subdevice_model*, float>& model_to_abs_y);
+            std::map<subdevice_model*, float>& model_to_abs_y,
+            bool is_device_during_reset);
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
 
         bool metadata_supported = false;
@@ -362,9 +364,9 @@ namespace rs2
     struct notification_data
     {
         notification_data(std::string description,
-                            double timestamp,
-                            rs2_log_severity severity,
-                            rs2_notification_category category);
+            double timestamp,
+            rs2_log_severity severity,
+            rs2_notification_category category);
         rs2_notification_category get_category() const;
         std::string get_description() const;
         double get_timestamp() const;
@@ -432,8 +434,8 @@ namespace rs2
     public:
         async_pointclound_mapper()
             : keep_calculating_pointcloud(true),
-              resulting_3d_models(1), depth_frames_to_render(1),
-              t([this]() {render_loop(); })
+            resulting_3d_models(1), depth_frames_to_render(1),
+            t([this]() {render_loop(); })
         {
         }
 
@@ -517,7 +519,7 @@ namespace rs2
         void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused);
 
         void update_3d_camera(const rect& viewer_rect,
-                              mouse_info& mouse, bool force = false);
+            mouse_info& mouse, bool force = false);
 
         void show_top_bar(ux_window& window, const rect& viewer_rect);
 
@@ -543,7 +545,7 @@ namespace rs2
 
         bool allow_3d_source_change = true;
         bool allow_stream_close = true;
-        
+
         std::array<float3, 4> roi_rect;
         bool draw_plane = false;
 
@@ -571,10 +573,10 @@ namespace rs2
 
     // Wrapper for cross-platform dialog control
     enum file_dialog_mode {
-        open_file       = (1 << 0),
-        save_file       = (1 << 1),
-        open_dir        = (1 << 2),
-        override_file   = (1 << 3)
+        open_file = (1 << 0),
+        save_file = (1 << 1),
+        open_dir = (1 << 2),
+        override_file = (1 << 3)
     };
 
     const char* file_dialog_open(file_dialog_mode flags, const char* filters, const char* default_path, const char* default_name);

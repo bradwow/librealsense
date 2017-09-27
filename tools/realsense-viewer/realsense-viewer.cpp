@@ -91,29 +91,42 @@ void add_playback_device(context& ctx, std::vector<device_model>& device_models,
     }
     if (failed && was_loaded)
     {
-        try { ctx.unload_device(file); } catch (...){ }
+        try { ctx.unload_device(file); }
+        catch (...) {}
     }
 }
 
+struct restarted_device
+{
+    restarted_device(const std::pair<std::string, std::string>& name, device_model* ptr = nullptr, int index = -1) :
+        name(name), p_device_model(ptr), disconnected(false), connected(false), index(index) {}
+    std::pair<std::string, std::string> name;
+    device_model* p_device_model;
+    bool disconnected;
+    bool connected;
+    int index;
+};
+
+std::vector<restarted_device> restarted_devices;
 // This function is called every frame
 // If between the frames there was an asyncronous connect/disconnect event
 // the function will pick up on this and add the device to the viewer
 void refresh_devices(std::mutex& m,
-                     context& ctx,
-                     bool& refresh_device_list, 
-                     device_list& list,
-                     std::vector<std::pair<std::string, std::string>>& device_names,
-                     std::vector<device_model>& device_models,
-                     viewer_model& viewer_model,
-                     std::vector<device>& devs,
-                     std::string& error_message)
+    context& ctx,
+    bool& refresh_device_list,
+    device_list& list,
+    std::vector<std::pair<std::string, std::string>>& device_names,
+    std::vector<device_model>& device_models,
+    viewer_model& viewer_model,
+    std::vector<device>& devs,
+    std::string& error_message)
 {
     std::lock_guard<std::mutex> lock(m);
 
     if (refresh_device_list)
     {
         refresh_device_list = false;
-
+        //This function checks the current status of connected devices
         try
         {
             auto prev_size = list.size();
@@ -123,7 +136,7 @@ void refresh_devices(std::mutex& m,
 
             if (device_models.size() == 0 && list.size() > 0 && prev_size == 0)
             {
-                auto dev = [&](){
+                auto dev = [&]() {
                     for (size_t i = 0; i < list.size(); i++)
                     {
                         if (list[i].supports(RS2_CAMERA_INFO_NAME) &&
@@ -141,10 +154,50 @@ void refresh_devices(std::mutex& m,
             }
 
             devs.clear();
-            for (auto&& sub : device_models)
+
+            std::set<size_t> indices_to_skip;
+
+            for(auto&& dev : list)
+            //for (size_t i = 0; i < list.size(); i++)
             {
-                devs.push_back(sub.dev);
-                for (auto&& s : sub.dev.query_sensors())
+                //auto&& dev = list[i];
+                auto restarted_dev_it = std::find_if(std::begin(restarted_devices), std::end(restarted_devices), [&dev](const restarted_device& rd)
+                {
+                    return rd.name == get_device_name(dev);
+                });
+                if (restarted_dev_it != std::end(restarted_devices))
+                {
+                    //If it is not connected and not disconnected, it reached refresh before the event
+                    //and since it is currently connected, do nothing with it (wait for the event to happen)
+                    if (!restarted_dev_it->connected && !restarted_dev_it->disconnected)
+                    {
+                        assert(0); //should not happen since we change "refresh_device_list" from the event
+                        //if it does happen (maybe due to a race on the lock) don't add this device
+                        continue;
+                    }
+
+                    if (!restarted_dev_it->connected && restarted_dev_it->disconnected)
+                    {
+                        //this could happen if the device connected between the time of the disconnect event and the time
+                        //it took to get here. 
+                        //So the device is currently connected but the event for connection has not yet arrived
+                        continue;
+                    }
+                    if (restarted_dev_it->connected)
+                    {
+                        auto in_list = std::find_if(begin(device_models), end(device_models),
+                            [&](const device_model& d) { return get_device_name(d.dev) == get_device_name(restarted_dev_it->p_device_model->dev); });
+                        if (in_list != end(device_models))
+                        {
+                            auto index = std::distance(begin(device_models), in_list);
+                            device_models[index] = device_model(dev, error_message, viewer_model);
+                            viewer_model.not_model.add_log(to_string() << in_list->dev.get_info(RS2_CAMERA_INFO_NAME) << " was restarted");
+                        }
+                        restarted_devices.erase(restarted_dev_it);
+                    }
+                }
+                devs.push_back(dev);
+                for (auto&& s : dev.query_sensors())
                 {
                     s.set_notifications_callback([&](const notification& n)
                     {
@@ -152,10 +205,14 @@ void refresh_devices(std::mutex& m,
                     });
                 }
             }
-
+            //after adding all connected device (some of which might have restarted), add the rest of the restarting devices (which are not yet connected)
+            for (auto&& disconnected_restarting_device : restarted_devices)
+            {
+                devs.push_back(disconnected_restarting_device.p_device_model->dev);               
+            }
 
             device_model* device_to_remove = nullptr;
-            while(true)
+            while (true)
             {
                 for (auto&& dev_model : device_models)
                 {
@@ -204,6 +261,7 @@ int main(int argv, const char** argc) try
 
     std::vector<device_model> device_models;
     device_model* device_to_remove = nullptr;
+    device_model* p_restarted_device = nullptr;
 
     viewer_model viewer_model;
     device_list list;
@@ -228,12 +286,21 @@ int main(int argv, const char** argc) try
     {
         std::lock_guard<std::mutex> lock(m);
 
+
         for (auto dev : devs)
         {
             if (info.was_removed(dev))
             {
                 viewer_model.not_model.add_notification({ get_device_name(dev).first + " Disconnected\n",
                     0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+                auto it = std::find_if(std::begin(restarted_devices), std::end(restarted_devices), [dev](const restarted_device& d) {
+                    return get_device_name(dev) == d.name;
+                });
+                if (it != std::end(restarted_devices))
+                {
+                    it->disconnected = true;
+                }
             }
         }
 
@@ -243,6 +310,14 @@ int main(int argv, const char** argc) try
             {
                 viewer_model.not_model.add_notification({ get_device_name(dev).first + " Connected\n",
                     0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+
+                auto it = std::find_if(std::begin(restarted_devices), std::end(restarted_devices), [dev](const restarted_device& d) {
+                    return get_device_name(dev) == d.name;
+                });
+                if (it != std::end(restarted_devices))
+                {
+                    it->connected = true;
+                }
             }
         }
         catch (...)
@@ -282,15 +357,15 @@ int main(int argv, const char** argc) try
     while (window)
     {
         refresh_devices(m, ctx, refresh_device_list, list, device_names, device_models, viewer_model, devs, error_message);
-       
+
         bool update_read_only_options = update_readonly_options_timer;
 
         auto output_height = viewer_model.get_output_height();
 
-        rect viewer_rect = { viewer_model.panel_width, 
-                             viewer_model.panel_y, window.width() - 
-                             viewer_model.panel_width, 
-                             window.height() - viewer_model.panel_y - output_height };
+        rect viewer_rect = { viewer_model.panel_width,
+            viewer_model.panel_y, window.width() -
+            viewer_model.panel_width,
+            window.height() - viewer_model.panel_y - output_height };
 
         // Flags for pop-up window - no window resize, move or collaps
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
@@ -369,13 +444,13 @@ int main(int argv, const char** argc) try
 
             if (ImGui::Selectable("Load Recorded Sequence", false, ImGuiSelectableFlags_SpanAllColumns))
             {
-                if (auto ret = file_dialog_open(open_file,"ROS-bag\0*.bag\0", NULL, NULL))
+                if (auto ret = file_dialog_open(open_file, "ROS-bag\0*.bag\0", NULL, NULL))
                 {
                     add_playback_device(ctx, device_models, error_message, viewer_model, ret);
                 }
             }
             ImGui::NextColumn();
-            ImGui::Text("%s","");
+            ImGui::Text("%s", "");
             ImGui::NextColumn();
 
             ImGui::PopStyleColor();
@@ -417,11 +492,29 @@ int main(int argv, const char** argc) try
 
             for (auto&& dev_model : device_models)
             {
+                auto it = std::find_if(std::begin(restarted_devices), std::end(restarted_devices), [&dev_model]
+                (const restarted_device& rd)
+                {
+                    return rd.name == get_device_name(dev_model.dev);
+                });
+                bool is_device_during_reset = it != std::end(restarted_devices);
+
                 dev_model.draw_controls(viewer_model.panel_width, viewer_model.panel_y,
                     window.get_font(), window.get_large_font(), window.get_mouse(),
-                    error_message, device_to_remove, viewer_model, windows_width,
+                    error_message, device_to_remove, p_restarted_device, viewer_model, windows_width,
                     update_read_only_options,
-                    model_to_y, model_to_abs_y);
+                    model_to_y, model_to_abs_y, is_device_during_reset);
+
+                if (p_restarted_device)
+                {
+                    auto device_to_restore = get_device_name(p_restarted_device->dev);
+                    auto it = std::find_if(begin(device_models), end(device_models),
+                        [&](const device_model& other) { return get_device_name(other.dev) == device_to_restore; });
+                    auto index = std::distance(begin(device_models), it);
+                    std::lock_guard<std::mutex> lock(m);
+                    restarted_devices.emplace_back(device_to_restore, p_restarted_device, index);
+                    p_restarted_device = nullptr;
+                }
             }
 
             if (device_to_remove)

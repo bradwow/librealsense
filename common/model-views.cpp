@@ -153,7 +153,7 @@ namespace rs2
         GLFWmonitor** monitors = glfwGetMonitors(&count);
         if (count == 0) return 1; // Not sure if possible, but better be safe
 
-                                    // Find the monitor that covers most of the application pixels:
+                                  // Find the monitor that covers most of the application pixels:
         GLFWmonitor* best = monitors[0];
         float best_area = 0.f;
         for (int i = 0; i < count; i++)
@@ -563,10 +563,10 @@ namespace rs2
         /*std::vector<int> depth_streams_ids;
         for (auto&& s : streams)
         {
-            if (s.second.dev.get() == &sensor && s.second.profile.stream_type() == RS2_STREAM_DEPTH)
-            {
-                depth_streams_ids.push_back(s.second.profile.unique_id());
-            }
+        if (s.second.dev.get() == &sensor && s.second.profile.stream_type() == RS2_STREAM_DEPTH)
+        {
+        depth_streams_ids.push_back(s.second.profile.unique_id());
+        }
         }
 
         if (!depth_streams_ids.size()) return;
@@ -576,39 +576,39 @@ namespace rs2
 
         if (ImGui::Checkbox("Histogram Equalization", &equalize))
         {
-            for (auto id : depth_streams_ids)
-            {
-                streams[id].texture->equalize = equalize;
-                streams[id].texture->min_depth = 0;
-                streams[id].texture->max_depth = 6 / depth_units;
-            }
+        for (auto id : depth_streams_ids)
+        {
+        streams[id].texture->equalize = equalize;
+        streams[id].texture->min_depth = 0;
+        streams[id].texture->max_depth = 6 / depth_units;
+        }
         }
 
         if (!equalize)
         {
-            auto val = first_depth_stream.texture->min_depth * depth_units;
-            if (ImGui::SliderFloat("##Near (m)", &val, 0, 16))
-            {
-                for (auto id : depth_streams_ids)
-                {
-                    streams[id].texture->min_depth = val / depth_units;
-                }
-            }
-            val = first_depth_stream.texture->max_depth * depth_units;
-            if (ImGui::SliderFloat("##Far  (m)", &val, 0, 16))
-            {
-                for (auto id : depth_streams_ids)
-                {
-                    streams[id].texture->max_depth = val / depth_units;
-                }
-            }
-            for (auto id : depth_streams_ids)
-            {
-                if (streams[id].texture->min_depth > streams[id].texture->max_depth)
-                {
-                    std::swap(streams[id].texture->max_depth, streams[id].texture->min_depth);
-                }
-            }
+        auto val = first_depth_stream.texture->min_depth * depth_units;
+        if (ImGui::SliderFloat("##Near (m)", &val, 0, 16))
+        {
+        for (auto id : depth_streams_ids)
+        {
+        streams[id].texture->min_depth = val / depth_units;
+        }
+        }
+        val = first_depth_stream.texture->max_depth * depth_units;
+        if (ImGui::SliderFloat("##Far  (m)", &val, 0, 16))
+        {
+        for (auto id : depth_streams_ids)
+        {
+        streams[id].texture->max_depth = val / depth_units;
+        }
+        }
+        for (auto id : depth_streams_ids)
+        {
+        if (streams[id].texture->min_depth > streams[id].texture->max_depth)
+        {
+        std::swap(streams[id].texture->max_depth, streams[id].texture->min_depth);
+        }
+        }
         }*/
     }
 
@@ -753,9 +753,9 @@ namespace rs2
             for (auto format_array : format_values)
             {
                 for (auto format : { RS2_FORMAT_RGB8,
-                                     RS2_FORMAT_Z16,
-                                     RS2_FORMAT_Y8,
-                                     RS2_FORMAT_MOTION_XYZ32F })
+                    RS2_FORMAT_Z16,
+                    RS2_FORMAT_Y8,
+                    RS2_FORMAT_MOTION_XYZ32F })
                 {
                     if (get_default_selection_index(format_array.second, format, &selection_index))
                     {
@@ -1380,8 +1380,8 @@ namespace rs2
                     r = r.normalize(stream_rect).unnormalize(_normalized_zoom.unnormalize(get_stream_bounds()));
                     dev->roi_rect = r; // Store new rect in device coordinates into the subdevice object
 
-                    // Send it to firmware:
-                    // Step 1: get rid of negative width / height
+                                       // Send it to firmware:
+                                       // Step 1: get rid of negative width / height
                     region_of_interest roi{};
                     roi.min_x = std::min(r.x, r.x + r.w);
                     roi.max_x = std::max(r.x, r.x + r.w);
@@ -1413,8 +1413,8 @@ namespace rs2
                         if (sensor.is<roi_sensor>())
                         {
                             sensor.as<roi_sensor>().set_region_of_interest({ x_margin, y_margin,
-                                                                             (int)size.x - x_margin - 1,
-                                                                             (int)size.y - y_margin - 1 });
+                                (int)size.x - x_margin - 1,
+                                (int)size.y - y_margin - 1 });
                         }
 
                         roi_display_rect = { 0, 0, 0, 0 };
@@ -2199,8 +2199,8 @@ namespace rs2
         if (dev && dev->show_algo_roi)
         {
             rect r{ float(dev->algo_roi.min_x), float(dev->algo_roi.min_y),
-                    float(dev->algo_roi.max_x - dev->algo_roi.min_x),
-                    float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
+                float(dev->algo_roi.max_x - dev->algo_roi.min_x),
+                float(dev->algo_roi.max_y - dev->algo_roi.min_y) };
 
             r = r.normalize(_normalized_zoom.unnormalize(get_stream_bounds())).unnormalize(stream_rect).cut_by(stream_rect);
 
@@ -2301,13 +2301,13 @@ namespace rs2
                 {
                     auto value = dev.get_info(info);
                     infos.push_back({ std::string(rs2_camera_info_to_string(info)),
-                                      std::string(value) });
+                        std::string(value) });
                 }
             }
             catch (...)
             {
                 infos.push_back({ std::string(rs2_camera_info_to_string(info)),
-                                  std::string("???") });
+                    std::string("???") });
             }
         }
 
@@ -2716,7 +2716,7 @@ namespace rs2
         if (fullscreen)
         {
             results[stream_index[selected_stream]] = { r.x, r.y + top_bar_height,
-                                                       r.w, r.h - top_bar_height };
+                r.w, r.h - top_bar_height };
         }
         else
         {
@@ -3300,7 +3300,7 @@ namespace rs2
         stream << std::setfill('0') << std::setw(hhh.count() >= 10 ? 2 : 1) << hhh.count() << ':' <<
             std::setfill('0') << std::setw(2) << mm.count() << ':' <<
             std::setfill('0') << std::setw(2) << ss.count();// << '.' <<
-            //std::setfill('0') << std::setw(3) << ms.count();
+                                                            //std::setfill('0') << std::setw(3) << ms.count();
         return stream.str();
     }
 
@@ -3406,7 +3406,40 @@ namespace rs2
         return device_names;
     }
 
-    void device_model::draw_advanced_mode_tab()
+    bool yes_no_dialog(const std::string& title, const std::string& do_what, bool& continue_to_show)
+    {
+        bool result = false;
+
+        if (continue_to_show)
+        {
+            ImGui::OpenPopup(title.c_str());
+            if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                std::string msg = to_string() << "Are you sure you want to " << do_what << "?";
+                ImGui::Text("\n%s\n", msg.c_str());
+                ImGui::Separator();
+                auto width = ImGui::GetWindowWidth();
+                ImGui::Dummy(ImVec2(width / 4, 0));
+                ImGui::SameLine();
+                if (ImGui::Button("Yes", ImVec2(50, 0)))
+                {
+                    ImGui::CloseCurrentPopup();
+                    result = true;
+                    continue_to_show = false;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("No", ImVec2(50, 0)))
+                {
+                    ImGui::CloseCurrentPopup();
+                    result = false;
+                    continue_to_show = false;
+                }
+                ImGui::EndPopup();
+            }
+        }
+        return result;
+    }
+    void device_model::draw_advanced_mode_tab(device_model*& restarted_device)
     {
         using namespace rs400;
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
@@ -3427,35 +3460,55 @@ namespace rs2
                     if (advanced.is_enabled())
                     {
                         if (allow_remove)
-                        if (ImGui::Button("Disable Advanced Mode", ImVec2{ 226, 0 }))
                         {
-                            //if (yes_no_dialog()) // TODO
-                            //{
-                            advanced.toggle_advanced_mode(false);
-                            restarting_device_info = get_device_info(dev, false);
-                            //}
+                            static bool disable_clicked = false;
+                            static bool disable_approved = false;
+                            if (ImGui::Button("Disable Advanced Mode", ImVec2{ 226, 0 }))
+                            {
+                                disable_clicked = true;
+                                disable_approved = false;
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
+                            }
+                            if (disable_clicked && !disable_approved && yes_no_dialog("Advanced Mode", "Disable Advanced Mode", disable_clicked))
+                            {
+                                restarting_device_info = get_device_info(dev, false);
+                                restarted_device = this;
+                                advanced.toggle_advanced_mode(false);
+                                disable_clicked = false;
+                                disable_approved = true;
+                            }
                         }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Disabling advanced mode will reset depth generation to factory settings\nThis will not affect calibration");
-                        }
+
                         draw_advanced_mode_controls(advanced, amc, get_curr_advanced_controls);
                     }
                     else
                     {
                         if (allow_remove)
-                        if (ImGui::Button("Enable Advanced Mode", ImVec2{ 226, 0 }))
                         {
-                            //if (yes_no_dialog()) // TODO
-                            //{
-                            advanced.toggle_advanced_mode(true);
-                            restarting_device_info = get_device_info(dev, false);
-                            //}
+                            static bool enable_clicked = false;
+                            static bool enable_approved = false;
+                            if (ImGui::Button("Enable Advanced Mode", ImVec2{ 226, 0 }))
+                            {
+                                enable_clicked = true;
+                                enable_approved = false;
+                            }
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
+                            }
+                            if (enable_clicked && !enable_approved && yes_no_dialog("Advanced Mode", "Enable Advanced Mode", enable_clicked))
+                            {
+                                restarted_device = this;
+                                restarting_device_info = get_device_info(dev, false);
+                                advanced.toggle_advanced_mode(true);
+                                enable_clicked = false;
+                                enable_approved = true;
+                            }
                         }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Advanced mode is a persistent camera state unlocking calibration formats and depth generation controls\nYou can always reset the camera to factory defaults by disabling advanced mode");
-                        }
+
                         ImGui::TextColored(redish, "Device is not in advanced mode!\nTo access advanced functionality\nclick \"Enable Advanced Mode\"");
                     }
                 }
@@ -3476,16 +3529,23 @@ namespace rs2
         const mouse_info &mouse,
         std::string& error_message,
         device_model*& device_to_remove,
+        device_model*& restarted_device,
         viewer_model& viewer, float windows_width,
         bool update_read_only_options,
         std::map<subdevice_model*, float>& model_to_y,
-        std::map<subdevice_model*, float>& model_to_abs_y)
+        std::map<subdevice_model*, float>& model_to_abs_y,
+        bool is_device_during_reset)
     {
+        if (is_device_during_reset)
+        {
+
+        }
         auto header_h = panel_height;
         if (dev.is<playback>()) header_h += 15;
 
         ImGui::PushFont(font1);
         auto pos = ImGui::GetCursorScreenPos();
+        const auto start_pos = pos;
         ImGui::GetWindowDrawList()->AddRectFilled(pos, { pos.x + panel_width, pos.y + header_h }, ImColor(sensor_header_light_blue));
         ImGui::GetWindowDrawList()->AddLine({ pos.x,pos.y }, { pos.x + panel_width,pos.y }, ImColor(black));
 
@@ -3627,6 +3687,7 @@ namespace rs2
                     try
                     {
                         restarting_device_info = get_device_info(dev, false);
+                        restarted_device = this;
                         dev.hardware_reset();
                     }
                     catch (const error& e)
@@ -3790,7 +3851,9 @@ namespace rs2
                 }
 
                 if (dev.is<advanced_mode>() && sub->s.is<depth_sensor>())
-                    draw_advanced_mode_tab();
+                {
+                    draw_advanced_mode_tab(restarted_device);
+                }
 
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
@@ -3809,6 +3872,11 @@ namespace rs2
 
         ImGui::PopStyleColor(2);
         ImGui::PopFont();
+
+        if (is_device_during_reset)
+        {
+            //TODO: disable device controls
+        }
     }
 
     void viewer_model::draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message)
