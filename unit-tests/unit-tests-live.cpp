@@ -3823,3 +3823,288 @@ TEST_CASE("Pipeline enable config and select device", "[live]") {
         pipe.stop();
     }
 }
+
+TEST_CASE("Empty Pipeline Profile", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        CHECK_NOTHROW(rs2::pipeline_profile p);
+        rs2::pipeline_profile prof;
+        auto d = prof.get_device();
+        auto s = prof.get_streams();
+        CHECK_FALSE(prof);
+        CHECK_FALSE(d);
+        CHECK_FALSE(s.size() > 0);
+    }
+}
+
+void CHECK_PIPELINE_PROFILE_SAME(const rs2::pipeline_profile& profile1, const rs2::pipeline_profile& profile2)
+{
+    rs2::device d1 = profile1.get_device();
+    rs2::device d2 = profile2.get_device();
+
+    REQUIRE(d1.get().get());
+    REQUIRE(d2.get().get());
+    std::string serial1, serial2;
+    REQUIRE_NOTHROW(serial1 = d1.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+    REQUIRE_NOTHROW(serial2 = d2.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+
+    auto streams1 = profile1.get_streams();
+    auto streams2 = profile2.get_streams();
+    REQUIRE(streams1.size() == streams2.size());
+
+    auto streams1_and_2_equals = true;
+    for (auto&& s : streams1)
+    {
+        auto it = std::find_if(streams2.begin(), streams2.end(), [&s](const stream_profile& sp) {
+            return s.unique_id() == sp.unique_id() &&
+                s.format() == sp.format() &&
+                s.fps() == sp.fps() &&
+                s.is_default() == sp.is_default() &&
+                s.stream_index() == sp.stream_index() &&
+                s.stream_type() == sp.stream_type() &&
+                s.stream_name() == sp.stream_name();
+        });
+        if (it == streams2.end())
+        {
+            streams1_and_2_equals = false;
+        }
+    }
+    REQUIRE(streams1_and_2_equals);
+}
+
+TEST_CASE("Pipeline empty Config", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        REQUIRE_NOTHROW(rs2::config c);
+        //Empty config
+        rs2::pipeline p(ctx);
+        rs2::config c1;
+        REQUIRE(c1.get().get() != nullptr);
+        bool can_resolve = false;
+        REQUIRE_NOTHROW(can_resolve = c1.can_resolve(p));
+        REQUIRE(true == can_resolve);
+        REQUIRE_THROWS(c1.resolve(nullptr));
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = c1.resolve(p));
+        REQUIRE(true == profile);
+    }
+}
+TEST_CASE("Pipeline 2 Config", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        rs2::pipeline p(ctx);
+        REQUIRE_NOTHROW(rs2::config c1);
+        REQUIRE_NOTHROW(rs2::config c2);
+        rs2::config c1;
+        rs2::config c2;
+        bool can_resolve1 = false;
+        bool can_resolve2 = false;
+        REQUIRE_NOTHROW(can_resolve1 = c1.can_resolve(p));
+        REQUIRE_NOTHROW(can_resolve2 = c2.can_resolve(p));
+        REQUIRE(can_resolve1);
+        REQUIRE(can_resolve2);
+        rs2::pipeline_profile profile1;
+        rs2::pipeline_profile profile2;
+
+        REQUIRE_NOTHROW(profile1 = c1.resolve(p));
+        REQUIRE(profile1);
+        REQUIRE_NOTHROW(profile2 = c2.resolve(p));
+        REQUIRE(profile2);
+
+        CHECK_PIPELINE_PROFILE_SAME(profile1, profile2);
+    }
+}
+TEST_CASE("Pipeline Config disable all is nop on empty config", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        rs2::pipeline p(ctx);
+        rs2::config c1;
+        c1.disable_all_streams();
+        rs2::config c2;
+        rs2::pipeline_profile profile1;
+        rs2::pipeline_profile profile2;
+
+        REQUIRE_NOTHROW(profile1 = c1.resolve(p));
+        REQUIRE(profile1);
+        REQUIRE_NOTHROW(profile2 = c2.resolve(p));
+        REQUIRE(profile2);
+
+        CHECK_PIPELINE_PROFILE_SAME(profile1, profile2);
+    }
+}
+TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        rs2::pipeline p(ctx);
+        rs2::config c1;
+        for (int i = 0; i < (int)RS2_STREAM_COUNT; i++)
+        {
+            REQUIRE_NOTHROW(c1.disable_stream(static_cast<rs2_stream>(i)));
+        }
+        rs2::config c2;
+        rs2::pipeline_profile profile1;
+        rs2::pipeline_profile profile2;
+
+        REQUIRE_NOTHROW(profile1 = c1.resolve(p));
+        REQUIRE(profile1);
+        REQUIRE_NOTHROW(profile2 = c2.resolve(p));
+        REQUIRE(profile2);
+
+        CHECK_PIPELINE_PROFILE_SAME(profile1, profile2);
+    }
+}
+
+enum special_folder
+{
+    user_desktop,
+    user_documents,
+    user_pictures,
+    user_videos,
+    temp_folder
+};
+
+#ifdef _WIN32
+#include <windows.h>
+#include <wchar.h>
+#include <KnownFolders.h>
+#include <shlobj.h>
+
+inline std::string get_folder_path(special_folder f)
+{
+    std::string res;
+    if (f == temp_folder)
+    {
+        TCHAR buf[MAX_PATH];
+        if (GetTempPath(MAX_PATH, buf) != 0)
+        {
+            char str[1024];
+            wcstombs(str, buf, 1023);
+            res = str;
+        }
+    }
+    else
+    {
+        GUID folder;
+        switch (f)
+        {
+        case user_desktop: folder = FOLDERID_Desktop;
+            break;
+        case user_documents: folder = FOLDERID_Documents;
+            break;
+        case user_pictures: folder = FOLDERID_Pictures;
+            break;
+        case user_videos: folder = FOLDERID_Videos;
+            break;
+        default:
+            throw std::invalid_argument(std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
+        }
+        PWSTR folder_path = NULL;
+        HRESULT hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
+        if (SUCCEEDED(hr))
+        {
+            char str[1024];
+            wcstombs(str, folder_path, 1023);
+            CoTaskMemFree(folder_path);
+            res = str;
+        }
+    }
+    return res;
+}
+#endif //_WIN32
+
+#if defined __linux__ || defined __APPLE__
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+
+inline std::string get_folder_path(special_folder f)
+{
+    std::string res;
+    if (f == special_folder::temp_folder)
+    {
+        const char* tmp_dir = getenv("TMPDIR");
+        res = tmp_dir ? tmp_dir : "/tmp/";
+    }
+    else
+    {
+        const char* home_dir = getenv("HOME");
+        if (!home_dir)
+        {
+            struct passwd* pw = getpwuid(getuid());
+            home_dir = (pw && pw->pw_dir) ? pw->pw_dir : "";
+        }
+        if (home_dir)
+        {
+            res = home_dir;
+            switch (f)
+            {
+            case user_desktop: res += "/Desktop/";
+                break;
+            case user_documents: res += "/Documents/";
+                break;
+            case user_pictures: res += "/Pictures/";
+                break;
+            case user_videos: res += "/Videos/";
+                break;
+            default:
+                throw std::invalid_argument(
+                    std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
+            }
+        }
+    }
+    return res;
+}
+#endif
+
+TEST_CASE("Pipeline record and playback", "[live]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        const std::string filename = get_folder_path(special_folder::temp_folder) + "test_file.bag";
+        {
+            rs2::pipeline p(ctx);
+            rs2::config cfg;
+            REQUIRE_NOTHROW(cfg.enable_record_to_file(filename));
+            rs2::pipeline_profile profile;
+            REQUIRE_NOTHROW(profile = cfg.resolve(p));
+            REQUIRE(profile);
+            auto dev = profile.get_device();
+            REQUIRE(dev);
+            disable_sensitive_options_for(dev);
+            REQUIRE_NOTHROW(p.start(cfg));
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            rs2::frameset frames;
+            REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
+            REQUIRE(frames);
+            REQUIRE(frames.size() > 0);
+            REQUIRE_NOTHROW(p.stop());
+        } //Scoping the above code to make sure no one holds the device
+        std::ifstream recorded_file(filename);
+        REQUIRE(recorded_file.good());
+
+        rs2::pipeline p(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(cfg.enable_record_to_file("")); //Disable recording
+        REQUIRE_NOTHROW(cfg.enable_device_from_file(filename));
+        REQUIRE_NOTHROW(profile = cfg.resolve(p));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(p.start(cfg));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        rs2::frameset frames;
+        REQUIRE_NOTHROW(frames = p.wait_for_frames(200));
+        REQUIRE(frames);
+        REQUIRE_NOTHROW(p.stop());
+    }
+}
